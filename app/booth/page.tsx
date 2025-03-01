@@ -3,8 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, CameraIcon, RefreshCw, Download } from "lucide-react";
+import { LogOut, CameraIcon, RefreshCw, Film, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import CameraComponent from "@/components/camera";
 import FilterSelector from "@/components/filter-selector";
 import PhotoStrip from "@/components/photo-strip";
@@ -17,6 +27,7 @@ export default function PhotoBooth() {
   const [selectedLayout, setSelectedLayout] = useState("vertical");
   const [isCapturing, setIsCapturing] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [showPhotoLimitAlert, setShowPhotoLimitAlert] = useState(false);
   const captureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up any timeouts when component unmounts
@@ -75,6 +86,14 @@ export default function PhotoBooth() {
     countdownStep(3);
   };
 
+  const handleTakeMorePhotos = () => {
+    if (capturedPhotos.length >= 3) {
+      setShowPhotoLimitAlert(true);
+    } else {
+      setActiveTab("camera");
+    }
+  };
+
   const handleReset = () => {
     setCapturedPhotos([]);
     setActiveTab("camera");
@@ -92,8 +111,8 @@ export default function PhotoBooth() {
       <header className="border-b">
         <div className="container flex h-16 items-center px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <ArrowLeft className="h-5 w-5" />
-            <span className="hidden sm:inline">Back to Home</span>
+            <LogOut className="h-5 w-5" />
+            <span className="hidden sm:inline">Get Out From Photobooth</span>
             <span className="sm:hidden">Back</span>
           </Link>
           <div className="ml-auto">
@@ -107,7 +126,9 @@ export default function PhotoBooth() {
       <main className="flex-1 container py-4 sm:py-6 px-2 sm:px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="camera">Camera</TabsTrigger>
+            <TabsTrigger value="camera" disabled={capturedPhotos.length > 2}>
+              Camera
+            </TabsTrigger>
             <TabsTrigger
               value="selection"
               disabled={capturedPhotos.length === 0}
@@ -193,6 +214,7 @@ export default function PhotoBooth() {
                             );
                           }}
                         >
+                          <Trash2 className="h-4 w-4 mr-2" />
                           Remove
                         </Button>
                       </div>
@@ -202,7 +224,7 @@ export default function PhotoBooth() {
 
                 <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
                   <Button
-                    onClick={() => setActiveTab("camera")}
+                    onClick={handleTakeMorePhotos}
                     className="w-full sm:w-auto"
                     variant="outline"
                   >
@@ -215,6 +237,7 @@ export default function PhotoBooth() {
                     disabled={capturedPhotos.length < 3}
                     className="w-full sm:w-auto"
                   >
+                    <Film className="h-4 w-4 mr-2" />
                     Continue to Photo Strip
                   </Button>
                 </div>
@@ -287,19 +310,6 @@ export default function PhotoBooth() {
               </div>
 
               <div className="space-y-4 sm:space-y-6">
-                {/* <div className="p-3 sm:p-4 border rounded-lg">
-                  <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">
-                    Download & Share
-                  </h3>
-                  <div className="space-y-3 sm:space-y-4">
-                    <Button className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PNG
-                    </Button>
-                    <SocialShare />
-                  </div>
-                </div> */}
-
                 <div className="p-3 sm:p-4 border rounded-lg">
                   <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">
                     Start Over
@@ -317,6 +327,28 @@ export default function PhotoBooth() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Alert Dialog for Photo Limit */}
+        <AlertDialog
+          open={showPhotoLimitAlert}
+          onOpenChange={setShowPhotoLimitAlert}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Photo Limit Reached</AlertDialogTitle>
+              <AlertDialogDescription>
+                You already have 3 photos. Please delete one to add a new photo
+                or reset the whole process by clicking the reset button.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReset}>
+                Reset All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

@@ -1,8 +1,11 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import Head from "next/head";
 
 interface PhotoStripProps {
   photos: string[];
@@ -11,12 +14,34 @@ interface PhotoStripProps {
 
 export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [backgroundColor, setBackgroundColor] = useState<string>("white");
+  const [fontLoaded, setFontLoaded] = useState(false);
+
+  // Load VT323 font
+  useEffect(() => {
+    const font = new FontFace(
+      "VT323",
+      "url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2)",
+    );
+
+    font
+      .load()
+      .then((loadedFont) => {
+        document.fonts.add(loadedFont);
+        setFontLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Error loading font:", err);
+        // Fall back to default font if loading fails
+        setFontLoaded(true);
+      });
+  }, []);
 
   useEffect(() => {
-    if (canvasRef.current && photos.length > 0) {
+    if (canvasRef.current && photos.length > 0 && fontLoaded) {
       generatePhotoStrip();
     }
-  }, [photos, layout]);
+  }, [photos, layout, backgroundColor, fontLoaded]);
 
   const roundedRect = (
     ctx: CanvasRenderingContext2D,
@@ -64,6 +89,12 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       date.getMinutes().toString().padStart(2, "0");
     const timestamp = formattedDate + " " + formattedTime;
 
+    // Set colors based on background choice
+    const bgColor = backgroundColor === "white" ? "#ffffff" : "#000000";
+    const textColor = backgroundColor === "white" ? "#000000" : "#ffffff";
+    const borderColor = backgroundColor === "white" ? "#000000" : "#ffffff";
+    const timestampColor = backgroundColor === "white" ? "#C9A648" : "#E1C16E";
+
     if (layout === "vertical") {
       // Improved dimensions for better quality
       width = 1200;
@@ -71,13 +102,13 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       canvas.width = width;
       canvas.height = height;
 
-      // Draw white background with rounded corners
-      ctx.fillStyle = "#ffffff";
+      // Draw background with rounded corners
+      ctx.fillStyle = bgColor;
       roundedRect(ctx, 0, 0, width, height, 30);
       ctx.fill();
 
       // Draw outer border with rounded corners
-      ctx.strokeStyle = "#000000";
+      ctx.strokeStyle = borderColor;
       ctx.lineWidth = 10;
       roundedRect(ctx, 10, 10, width - 20, height - 20, 25);
       ctx.stroke();
@@ -98,7 +129,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             const y = 40 + i * (photoHeight + spacing);
 
             // Draw photo frame with rounded corners
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = bgColor;
             roundedRect(
               ctx,
               x - 10,
@@ -123,15 +154,15 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         });
       }
 
-      // Add title at bottom
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 50px Arial";
+      // Add title at bottom with VT323 font
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 60px VT323, monospace";
       ctx.textAlign = "center";
-      ctx.fillText("PHOTO BOOTH", width / 2, height - 80);
+      ctx.fillText("PHOTOBOOTH", width / 2, height - 80);
 
-      // Add timestamp in vintage yellow at bottom right
-      ctx.fillStyle = "#C9A648"; // Dark vintage yellow
-      ctx.font = "28px monospace";
+      // Add timestamp in vintage yellow at bottom right with VT323 font
+      ctx.fillStyle = timestampColor;
+      ctx.font = "32px VT323, monospace";
       ctx.textAlign = "right";
       ctx.fillText(timestamp, width - 40, height - 40);
     } else if (layout === "horizontal") {
@@ -140,13 +171,13 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       canvas.width = width;
       canvas.height = height;
 
-      // Draw white background with rounded corners
-      ctx.fillStyle = "#ffffff";
+      // Draw background with rounded corners
+      ctx.fillStyle = bgColor;
       roundedRect(ctx, 0, 0, width, height, 30);
       ctx.fill();
 
       // Draw outer border with rounded corners
-      ctx.strokeStyle = "#000000";
+      ctx.strokeStyle = borderColor;
       ctx.lineWidth = 10;
       roundedRect(ctx, 10, 10, width - 20, height - 20, 25);
       ctx.stroke();
@@ -180,15 +211,15 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         });
       }
 
-      // Add title
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 50px Arial";
+      // Add title with VT323 font
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 60px VT323, monospace";
       ctx.textAlign = "center";
-      ctx.fillText("PHOTO BOOTH", width / 2, 45);
+      ctx.fillText("PHOTOBOOTH", width / 2, 60);
 
-      // Add timestamp in vintage yellow at bottom right
-      ctx.fillStyle = "#C9A648"; // Dark vintage yellow
-      ctx.font = "28px monospace";
+      // Add timestamp in vintage yellow at bottom right with VT323 font
+      ctx.fillStyle = timestampColor;
+      ctx.font = "32px VT323, monospace";
       ctx.textAlign = "right";
       ctx.fillText(timestamp, width - 40, height - 40);
     } else if (layout === "grid") {
@@ -197,13 +228,13 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       canvas.width = width;
       canvas.height = height;
 
-      // Draw white background with rounded corners
-      ctx.fillStyle = "#ffffff";
+      // Draw background with rounded corners
+      ctx.fillStyle = bgColor;
       roundedRect(ctx, 0, 0, width, height, 30);
       ctx.fill();
 
       // Draw outer border with rounded corners
-      ctx.strokeStyle = "#000000";
+      ctx.strokeStyle = borderColor;
       ctx.lineWidth = 10;
       roundedRect(ctx, 10, 10, width - 20, height - 20, 25);
       ctx.stroke();
@@ -266,15 +297,15 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         });
       }
 
-      // Add title
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 50px Arial";
+      // Add title with VT323 font
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 60px VT323, monospace";
       ctx.textAlign = "center";
-      ctx.fillText("PHOTO BOOTH", width / 2, 60);
+      ctx.fillText("PHOTOBOOTH", width / 2, 70);
 
-      // Add timestamp in vintage yellow at bottom right
-      ctx.fillStyle = "#C9A648"; // Dark vintage yellow
-      ctx.font = "28px monospace";
+      // Add timestamp in vintage yellow at bottom right with VT323 font
+      ctx.fillStyle = timestampColor;
+      ctx.font = "32px VT323, monospace";
       ctx.textAlign = "right";
       ctx.fillText(timestamp, width - 40, height - 40);
     } else if (layout === "classic-strip") {
@@ -284,13 +315,13 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       canvas.width = width;
       canvas.height = height;
 
-      // Draw white background with rounded corners
-      ctx.fillStyle = "#ffffff";
+      // Draw background with rounded corners
+      ctx.fillStyle = bgColor;
       roundedRect(ctx, 0, 0, width, height, 20);
       ctx.fill();
 
       // Draw outer border with rounded corners
-      ctx.strokeStyle = "#000000";
+      ctx.strokeStyle = borderColor;
       ctx.lineWidth = 6;
       roundedRect(ctx, 6, 6, width - 12, height - 12, 15);
       ctx.stroke();
@@ -322,15 +353,15 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         });
       }
 
-      // Add footer text centered at bottom
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 30px Arial";
+      // Add footer text centered at bottom with VT323 font
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 36px VT323, monospace";
       ctx.textAlign = "center";
-      ctx.fillText("PHOTO BOOTH", width / 2, height - 30);
+      ctx.fillText("PHOTOBOOTH", width / 2, height - 30);
 
-      // Add timestamp in vintage yellow at bottom right
-      ctx.fillStyle = "#C9A648"; // Dark vintage yellow
-      ctx.font = "24px monospace";
+      // Add timestamp in vintage yellow at bottom right with VT323 font
+      ctx.fillStyle = timestampColor;
+      ctx.font = "28px VT323, monospace";
       ctx.textAlign = "right";
       ctx.fillText(timestamp, width - 20, height - 20);
     }
@@ -359,7 +390,45 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="border p-4 bg-white rounded-lg shadow-lg">
+      {/* Add Google Font link for VT323 in the document */}
+      <Head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+          rel="stylesheet"
+        />
+      </Head>
+
+      <div className="mb-4">
+        <div className="flex gap-4">
+          <div
+            className={`flex items-center p-2 cursor-pointer rounded-md ${
+              backgroundColor === "white" ? "ring-2 ring-blue-500" : ""
+            }`}
+            onClick={() => setBackgroundColor("white")}
+          >
+            <div className="w-5 h-5 border border-gray-300 bg-white mr-2 rounded-full"></div>
+            <span>White</span>
+          </div>
+
+          <div
+            className={`flex items-center p-2 cursor-pointer rounded-md ${
+              backgroundColor === "black" ? "ring-2 ring-blue-500" : ""
+            }`}
+            onClick={() => setBackgroundColor("black")}
+          >
+            <div className="w-5 h-5 border border-gray-300 bg-black mr-2 rounded-full"></div>
+            <span>Black</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="border p-4 bg-gray-100 rounded-lg shadow-lg">
         <canvas
           ref={canvasRef}
           className="max-w-full"
