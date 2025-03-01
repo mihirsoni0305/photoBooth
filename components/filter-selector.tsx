@@ -21,12 +21,10 @@ const FILTERS = [
   { id: "neon", name: "Neon" },
   { id: "pixelate", name: "Pixelate" },
   { id: "rainbow", name: "Rainbow" },
-  // New filters
   { id: "90s", name: "90's Retro" },
   { id: "2000s", name: "Y2K Digital" },
   { id: "noir", name: "Film Noir" },
   { id: "fisheye", name: "Fisheye" },
-  { id: "rainbowAura", name: "Rainbow Aura" },
   { id: "glitch", name: "Glitch Art" },
   { id: "crosshatch", name: "Crosshatch" },
 ];
@@ -201,8 +199,6 @@ function getFilterPreviewColor(filterId: string): string {
       return "linear-gradient(to right, #000, #555)";
     case "fisheye":
       return "radial-gradient(circle, #6699ff 10%, #003366 90%)";
-    case "rainbowAura":
-      return "radial-gradient(circle, white 30%, red, orange, yellow, green, blue, indigo, violet)";
     case "glitch":
       return "repeating-linear-gradient(90deg, #ff0000 0px, #ff0000 2px, #00ff00 2px, #00ff00 4px, #0000ff 4px, #0000ff 6px)";
     case "crosshatch":

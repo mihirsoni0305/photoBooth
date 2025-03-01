@@ -1,119 +1,182 @@
-import type { Metadata } from "next"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Camera, Share2, Image } from "lucide-react"
+"use client";
 
-export const metadata: Metadata = {
-  title: "AI Photo Booth",
-  description: "Take photos with AI filters and create custom photo strips",
-}
+import { useState, useRef, useEffect } from "react";
+import {
+  motion,
+  useAnimation,
+  useDragControls,
+  type PanInfo,
+} from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
+import { Moon, Sun, HelpCircle } from "lucide-react";
+import * as AlertDialog from "@radix-ui/react-alert-dialog";
 
 export default function Home() {
+  const router = useRouter();
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDropped, setIsDropped] = useState(false);
+  const coinSlotRef = useRef<HTMLDivElement>(null);
+  const curtainControls = useAnimation();
+  const dragControls = useDragControls();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = async (
+    event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo,
+  ) => {
+    setIsDragging(false);
+
+    if (coinSlotRef.current) {
+      const slotRect = coinSlotRef.current.getBoundingClientRect();
+      const coinX = info.point.x;
+      const coinY = info.point.y;
+
+      // Check if coin is dropped in slot
+      if (
+        coinX >= slotRect.left &&
+        coinX <= slotRect.right &&
+        coinY >= slotRect.top &&
+        coinY <= slotRect.bottom
+      ) {
+        setIsDropped(true);
+        // Animate curtains opening
+        await curtainControls.start({
+          x: "100%",
+          transition: { duration: 2, ease: "easeInOut" },
+        });
+        // Navigate to photo booth
+        setTimeout(() => {
+          router.push("/booth");
+        }, 200);
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="border-b">
-        <div className="container flex h-16 items-center px-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Camera className="h-6 w-6" />
-            <span>AI Photo Booth</span>
-          </Link>
-        </div>
-      </header>
-      <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-muted">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Create Amazing Photo Strips with AI
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Take photos, apply real-time AI filters, and generate high-quality photo strips to share with
-                    friends.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/booth">
-                    <Button size="lg" className="gap-1">
-                      <Camera className="h-5 w-5" />
-                      Start Photo Booth
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="mx-auto lg:mr-0 relative">
-                <div className="relative w-full max-w-[400px] aspect-[3/4] bg-muted rounded-lg overflow-hidden shadow-lg">
-                  <div className="grid grid-cols-1 grid-rows-4 h-full gap-2 p-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="bg-background rounded-md overflow-hidden">
-                        <img
-                          src={`/placeholder.svg?height=200&width=300`}
-                          alt={`Sample photo ${i}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="absolute -bottom-6 -right-6 bg-primary text-primary-foreground p-3 rounded-full shadow-lg">
-                  <Share2 className="h-6 w-6" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center overflow-hidden">
+      {/* Info Button */}
+      <AlertDialog.Root>
+        <AlertDialog.Trigger asChild>
+          <button className="absolute top-4 left-4 p-2 rounded-full bg-background/10 hover:bg-background/20 transition-colors">
+            <HelpCircle className="w-6 h-6" />
+          </button>
+        </AlertDialog.Trigger>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 bg-black/50" />
+          <AlertDialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-11/12 max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl">
+            <AlertDialog.Title className="text-lg font-bold text-[#FACC14] text-center">
+              Welcome to the Photobooth!
+            </AlertDialog.Title>
+            <AlertDialog.Description className="mt-2 text-sm text-gray-700 dark:text-gray-300 text-center leading-relaxed">
+              Hello! Hope you have fun with the photobooth. All the photos you
+              take here are local, which means no one else can see them but you.
+              You can save them and then print them out! Snap some cute pics!
+              Insert a coin to start your photo session. Enjoy capturing
+              memories!
+            </AlertDialog.Description>
+            <AlertDialog.Action asChild>
+              <button className="mt-4 w-full bg-[#FACC14] text-primary-foreground py-2 rounded-lg hover:bg-[#FACC14]/90 transition-colors">
+                Got it!
+              </button>
+            </AlertDialog.Action>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
 
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">How It Works</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Create stunning photo strips in just a few simple steps
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Camera className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold">Take Photos</h3>
-                <p className="text-muted-foreground text-center">
-                  Use your camera to take multiple photos with real-time AI filters
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Image className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold">Create Strip</h3>
-                <p className="text-muted-foreground text-center">
-                  Arrange your photos into a custom strip with borders and effects
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Share2 className="h-8 w-8" />
-                </div>
-                <h3 className="text-xl font-bold">Share</h3>
-                <p className="text-muted-foreground text-center">
-                  Download your photo strip or share directly to social media
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-      <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
-          <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} AI Photo Booth. All rights reserved.
-          </p>
+      {/* Theme Toggle */}
+      <button
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        className="absolute top-4 left-16 p-2 rounded-full bg-background/10 hover:bg-background/20 transition-colors"
+      >
+        {mounted &&
+          (theme === "dark" ? (
+            <Sun className="w-6 h-6" />
+          ) : (
+            <Moon className="w-6 h-6" />
+          ))}
+      </button>
+
+      {/* Made by Mihir Button */}
+      <a
+        href="https://www.instagram.com/the_mi_here/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute top-4 right-4 px-4 py-2 rounded-full bg-[#FACC14] text-primary-foreground hover:bg-[#FACC14]/90 transition-colors font-vt323"
+      >
+        Made by Mihir
+      </a>
+
+      <div className="relative w-full max-w-4xl aspect-[4/3] rounded-xl border-4 border-neutral-700 bg-neutral-900">
+        {/* Neon Sign */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50">
+          <h1 className="text-4xl md:text-6xl font-bold font-mono tracking-wider text-red-500 animate-pulse">
+            <span className="neon-text">PHOTOS</span>
+          </h1>
         </div>
-      </footer>
+
+        <div className="absolute inset-0 flex">
+          {/* Coin Slot Section */}
+          <div className="w-1/5 bg-neutral-800 flex items-center justify-center relative">
+            <div
+              ref={coinSlotRef}
+              className="w-16 h-24 bg-neutral-900 rounded-lg border-2 border-neutral-700 flex flex-col items-center justify-start p-2"
+            >
+              <span className="text-yellow-500 text-xs mb-2 text-center font-vt323">
+                INSERT
+                <br />
+                COIN HERE
+              </span>
+              <div className="w-12 h-2 bg-black rounded-sm" />
+            </div>
+
+            {/* Draggable Coin */}
+            {!isDropped && (
+              <motion.div
+                drag
+                dragControls={dragControls}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                whileDrag={{ scale: 1.1 }}
+                className="absolute bottom-12 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-yellow-400 cursor-grab active:cursor-grabbing shadow-lg flex items-center justify-center"
+                style={{ touchAction: "none" }}
+              >
+                <span className="text-yellow-800 font-bold">$1</span>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Curtains Section */}
+          <div className="relative flex-1 overflow-hidden">
+            <motion.div
+              animate={curtainControls}
+              initial={{ x: 0 }}
+              className="absolute inset-0 flex"
+            >
+              {/* Curtain pleats */}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 bg-red-800"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(90deg, rgba(0,0,0,0.3) 0%, rgba(153,27,27,1) 50%, rgba(0,0,0,0.3) 100%)",
+                  }}
+                />
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
-

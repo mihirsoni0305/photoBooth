@@ -223,12 +223,13 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-// New effect functions
 function apply90sEffect(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
 ) {
+  ctx.globalCompositeOperation = "multiply";
+
   // Add slightly blurry vignette
   const gradient = ctx.createRadialGradient(
     width / 2,
@@ -241,7 +242,6 @@ function apply90sEffect(
   gradient.addColorStop(0, "rgba(0,0,0,0)");
   gradient.addColorStop(1, "rgba(0,0,0,0.4)");
 
-  ctx.globalCompositeOperation = "overlay";
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
@@ -289,36 +289,30 @@ function apply2000sEffect(
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
-  // Add bright colored border
-  ctx.globalCompositeOperation = "source-over";
-  const borderSize = 15;
+  // No pink border or corner decorations as requested
 
-  ctx.strokeStyle = "#FF00FF";
-  ctx.lineWidth = borderSize;
-  ctx.strokeRect(
-    borderSize / 2,
-    borderSize / 2,
-    width - borderSize,
-    height - borderSize,
+  // Add slight color shift to mimic early digital cameras
+  ctx.globalCompositeOperation = "color";
+  ctx.fillStyle = "rgba(100, 180, 255, 0.1)";
+  ctx.fillRect(0, 0, width, height);
+
+  // Add subtle bloom effect typical of early 2000s digital photos
+  ctx.globalCompositeOperation = "lighten";
+  const bloomGradient = ctx.createRadialGradient(
+    width / 2,
+    height / 2,
+    width * 0.3,
+    width / 2,
+    height / 2,
+    width * 0.7,
   );
+  bloomGradient.addColorStop(0, "rgba(255,255,255,0.08)");
+  bloomGradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = bloomGradient;
+  ctx.fillRect(0, 0, width, height);
 
-  // Add retro digital corners
-  ctx.fillStyle = "rgba(255, 0, 255, 0.7)";
-  const cornerSize = 30;
-
-  // Top left corner
-  ctx.beginPath();
-  ctx.moveTo(0, cornerSize);
-  ctx.lineTo(cornerSize, cornerSize);
-  ctx.lineTo(cornerSize, 0);
-  ctx.fill();
-
-  // Bottom right corner
-  ctx.beginPath();
-  ctx.moveTo(width, height - cornerSize);
-  ctx.lineTo(width - cornerSize, height - cornerSize);
-  ctx.lineTo(width - cornerSize, height);
-  ctx.fill();
+  // Reset composite operation
+  ctx.globalCompositeOperation = "source-over";
 }
 
 function applyNoirEffect(
@@ -409,7 +403,7 @@ function applyFisheyeEffect(
       } else {
         // Apply fisheye distortion inside lens
         const dist = Math.sqrt(distSq);
-        const newDist = Math.pow(dist, 1.0 / strength); // Adjust power for strength
+        const newDist = Math.pow(dist, 1.5 / strength); // Adjust power for strength
 
         const newNx = (newDist * nx) / dist;
         const newNy = (newDist * ny) / dist;
@@ -433,14 +427,6 @@ function applyFisheyeEffect(
   }
 
   destCtx.putImageData(destData, 0, 0);
-
-  // Add circular border to emphasize the fisheye effect
-  destCtx.globalCompositeOperation = "source-over";
-  destCtx.strokeStyle = "rgba(0,0,0,0.7)";
-  destCtx.lineWidth = 10;
-  destCtx.beginPath();
-  destCtx.arc(centerX, centerY, radius * 0.98, 0, Math.PI * 2);
-  destCtx.stroke();
 }
 
 function applyRainbowAuraEffect(
@@ -448,146 +434,54 @@ function applyRainbowAuraEffect(
   width: number,
   height: number,
 ) {
-  // Create a temporary canvas to apply the effect
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = width;
   tempCanvas.height = height;
   const tempCtx = tempCanvas.getContext("2d");
   if (!tempCtx) return;
 
-  // Copy the image
+  // Copy original image
   tempCtx.drawImage(ctx.canvas, 0, 0);
 
-  // Get image data for edge detection
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const pixels = imageData.data;
+  // Create multiple color-shifted layers
+  const offsets = [
+    { x: -8, y: -8, color: "rgba(255, 0, 0, 0.7)" }, // Red
+    { x: 8, y: -8, color: "rgba(0, 255, 0, 0.6)" }, // Green
+    { x: -8, y: 8, color: "rgba(0, 0, 255, 0.6)" }, // Blue
+    { x: 8, y: 8, color: "rgba(255, 255, 0, 0.5)" }, // Yellow
+  ];
 
-  // Create a copy for the original image
-  const origCanvas = document.createElement("canvas");
-  origCanvas.width = width;
-  origCanvas.height = height;
-  const origCtx = origCanvas.getContext("2d");
-  if (!origCtx) return;
-  origCtx.drawImage(ctx.canvas, 0, 0);
+  offsets.forEach(({ x, y, color }) => {
+    ctx.globalAlpha = 0.8;
+    ctx.globalCompositeOperation = "screen";
+    ctx.filter = "blur(10px)";
+    ctx.fillStyle = color;
+    ctx.drawImage(tempCanvas, x, y);
+  });
 
-  // Clear the original canvas for rebuilding
-  ctx.clearRect(0, 0, width, height);
-
-  // First apply a slight blur to the subject
-  ctx.filter = "blur(1px)";
-  ctx.drawImage(tempCanvas, 0, 0);
-  ctx.filter = "none";
-
-  // Extract subject edges for the aura effect
-  const edgeCanvas = document.createElement("canvas");
-  edgeCanvas.width = width;
-  edgeCanvas.height = height;
-  const edgeCtx = edgeCanvas.getContext("2d");
-  if (!edgeCtx) return;
-
-  // Draw original image
-  edgeCtx.drawImage(tempCanvas, 0, 0);
-
-  // Apply edge detection
-  const edgeData = edgeCtx.getImageData(0, 0, width, height);
-  const edgePixels = edgeData.data;
-
-  // Simple edge detection
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = (y * width + x) * 4;
-      const idxLeft = (y * width + (x - 1)) * 4;
-      const idxRight = (y * width + (x + 1)) * 4;
-      const idxUp = ((y - 1) * width + x) * 4;
-      const idxDown = ((y + 1) * width + x) * 4;
-
-      // Calculate differences
-      const diffX =
-        Math.abs(pixels[idxLeft] - pixels[idxRight]) +
-        Math.abs(pixels[idxLeft + 1] - pixels[idxRight + 1]) +
-        Math.abs(pixels[idxLeft + 2] - pixels[idxRight + 2]);
-
-      const diffY =
-        Math.abs(pixels[idxUp] - pixels[idxDown]) +
-        Math.abs(pixels[idxUp + 1] - pixels[idxDown + 1]) +
-        Math.abs(pixels[idxUp + 2] - pixels[idxDown + 2]);
-
-      const diff = diffX + diffY;
-
-      if (diff > 100) {
-        // Threshold for edge detection
-        edgePixels[idx] = 255;
-        edgePixels[idx + 1] = 255;
-        edgePixels[idx + 2] = 255;
-        edgePixels[idx + 3] = 255;
-      } else {
-        edgePixels[idx] = 0;
-        edgePixels[idx + 1] = 0;
-        edgePixels[idx + 2] = 0;
-        edgePixels[idx + 3] = 0;
-      }
-    }
-  }
-
-  edgeCtx.putImageData(edgeData, 0, 0);
-
-  // Apply dilate operation to thicken edges
-  const dilatedCanvas = document.createElement("canvas");
-  dilatedCanvas.width = width;
-  dilatedCanvas.height = height;
-  const dilatedCtx = dilatedCanvas.getContext("2d");
-  if (!dilatedCtx) return;
-
-  // Draw edges
-  dilatedCtx.drawImage(edgeCanvas, 0, 0);
-
-  // Apply multiple color glows around the edges
-  // Yellow glow
-  dilatedCtx.globalCompositeOperation = "source-over";
-  dilatedCtx.shadowColor = "rgba(255, 255, 0, 0.8)";
-  dilatedCtx.shadowBlur = 15;
-  dilatedCtx.shadowOffsetX = 0;
-  dilatedCtx.shadowOffsetY = 0;
-  dilatedCtx.drawImage(edgeCanvas, 0, 0);
-
-  // Red glow
-  dilatedCtx.shadowColor = "rgba(255, 0, 0, 0.7)";
-  dilatedCtx.shadowBlur = 12;
-  dilatedCtx.drawImage(edgeCanvas, 0, 0);
-
-  // Blue glow
-  dilatedCtx.shadowColor = "rgba(0, 0, 255, 0.6)";
-  dilatedCtx.shadowBlur = 10;
-  dilatedCtx.drawImage(edgeCanvas, 0, 0);
-
-  // Now blend this glow with the original image
-  ctx.globalCompositeOperation = "screen";
-  ctx.drawImage(dilatedCanvas, 0, 0);
-
-  // Draw the original image on top, slightly enhanced
-  ctx.globalCompositeOperation = "source-over";
-  ctx.filter = "contrast(110%) brightness(105%)";
-  ctx.drawImage(origCanvas, 0, 0);
-  ctx.filter = "none";
-
-  // Add final color boost
-  ctx.globalCompositeOperation = "color-dodge";
-  const finalGradient = ctx.createRadialGradient(
+  // Apply a radial glow effect
+  const gradient = ctx.createRadialGradient(
     width / 2,
     height / 2,
-    0,
+    10,
     width / 2,
     height / 2,
-    height / 2,
+    width / 1.5,
   );
-  finalGradient.addColorStop(0, "rgba(255, 255, 100, 0.1)");
-  finalGradient.addColorStop(0.7, "rgba(255, 100, 100, 0.05)");
-  finalGradient.addColorStop(1, "rgba(100, 100, 255, 0)");
+  gradient.addColorStop(0, "rgba(255, 255, 255, 0.1)");
+  gradient.addColorStop(0.5, "rgba(255, 0, 150, 0.2)");
+  gradient.addColorStop(1, "rgba(0, 100, 255, 0.1)");
 
-  ctx.fillStyle = finalGradient;
+  ctx.globalCompositeOperation = "overlay";
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
+  // Restore original image with slight enhancement
+  ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = "source-over";
+  ctx.filter = "contrast(120%) brightness(110%)";
+  ctx.drawImage(tempCanvas, 0, 0);
+  ctx.filter = "none";
 }
 
 function applyGlitchEffect(
