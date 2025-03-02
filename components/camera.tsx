@@ -16,24 +16,42 @@ export default function CameraComponent({
 }: CameraComponentProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  // Handle resize to maintain proper dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const { width } = containerRef.current.getBoundingClientRect();
+        // Updated: Use 70% of viewport height instead of 50%
+        const height = window.innerHeight * 0.7;
+        setDimensions({ width, height });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
 
   useEffect(() => {
     startCamera();
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [isFrontCamera]);
 
   useEffect(() => {
     if (isCameraReady) {
       const intervalId = setInterval(applyRealTimeFilter, 1000 / 30); // 30 FPS
       return () => clearInterval(intervalId);
     }
-  }, [isCameraReady, selectedFilter]);
+  }, [isCameraReady, selectedFilter, dimensions]);
 
   const startCamera = async () => {
     try {
@@ -69,12 +87,10 @@ export default function CameraComponent({
 
   const toggleCamera = () => {
     setIsFrontCamera(!isFrontCamera);
-    stopCamera();
-    startCamera();
   };
 
   const applyRealTimeFilter = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && dimensions.width > 0) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
@@ -110,14 +126,20 @@ export default function CameraComponent({
   };
 
   return (
-    <div className="relative">
-      <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+    <div className="w-full" ref={containerRef}>
+      <div
+        className="relative bg-black rounded-lg overflow-hidden"
+        style={{
+          height: `${dimensions.height}px`,
+          maxHeight: "80vh", // Increased max height to accommodate 70% viewport
+        }}
+      >
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         <canvas
           ref={canvasRef}
@@ -138,7 +160,12 @@ export default function CameraComponent({
       </div>
 
       <div className="mt-4 flex justify-between">
-        <Button variant="outline" onClick={toggleCamera} disabled={isCapturing}>
+        <Button
+          variant="outline"
+          onClick={toggleCamera}
+          disabled={isCapturing}
+          className="py-2 px-4"
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Switch Camera
         </Button>
@@ -148,7 +175,7 @@ export default function CameraComponent({
           variant="outline"
           onClick={capturePhoto}
           disabled={!isCameraReady || isCapturing}
-          className={isCapturing ? "animate-pulse" : ""}
+          className={`${isCapturing ? "animate-pulse" : ""} py-2 px-4`}
         >
           {isCapturing ? (
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />

@@ -147,7 +147,7 @@ export default function Home() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 whileDrag={{ scale: 1.1 }}
-                className="absolute bottom-12 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-yellow-400 cursor-grab active:cursor-grabbing shadow-lg flex items-center justify-center"
+                className="absolute bottom-10 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-yellow-400 cursor-grab active:cursor-grabbing shadow-lg flex items-center justify-center"
                 style={{ touchAction: "none" }}
               >
                 <span className="text-yellow-800 font-bold">$1</span>

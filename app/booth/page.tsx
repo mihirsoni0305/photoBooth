@@ -141,15 +141,16 @@ export default function PhotoBooth() {
           </TabsList>
 
           <TabsContent value="camera" className="mt-4 sm:mt-6">
-            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2 relative">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+              <div className="w-full lg:w-2/3">
+                {/* Camera takes full width on mobile but 2/3 on desktop */}
                 <CameraComponent
                   onCapture={handlePhotoCapture}
                   selectedFilter={selectedFilter}
                 />
               </div>
 
-              <div className="space-y-4 sm:space-y-6">
+              <div className="w-full lg:w-1/3 space-y-4 sm:space-y-6">
                 <div className="p-3 sm:p-4 border rounded-lg">
                   <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4">
                     Filters
