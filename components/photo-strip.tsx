@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Head from "next/head";
 
@@ -14,8 +13,12 @@ interface PhotoStripProps {
 
 export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
   const [fontLoaded, setFontLoaded] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [originalSize, setOriginalSize] = useState({ width: 0, height: 0 });
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Load VT323 font
   useEffect(() => {
@@ -36,6 +39,35 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         setFontLoaded(true);
       });
   }, []);
+
+  // Resize canvas when container size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current && originalSize.width > 0) {
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
+
+        // Calculate the scaling factor to fit the canvas in the container
+        const scaleWidth = containerWidth / originalSize.width;
+        const scaleHeight =
+          (isMobile ? window.innerHeight * 0.6 : containerHeight) /
+          originalSize.height;
+        const scale = Math.min(scaleWidth, scaleHeight, 1); // Don't scale up beyond original size
+
+        setCanvasSize({
+          width: originalSize.width * scale,
+          height: originalSize.height * scale,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [originalSize, isMobile]);
 
   useEffect(() => {
     if (canvasRef.current && photos.length > 0 && fontLoaded) {
@@ -101,6 +133,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       height = 2400;
       canvas.width = width;
       canvas.height = height;
+      setOriginalSize({ width, height });
 
       // Draw background with rounded corners
       ctx.fillStyle = bgColor;
@@ -145,8 +178,24 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             roundedRect(ctx, x, y, photoWidth, photoHeight, 10);
             ctx.clip();
 
-            // Draw photo
-            ctx.drawImage(img, x, y, photoWidth, photoHeight);
+            // Draw photo while maintaining aspect ratio
+            const aspectRatio = img.width / img.height;
+            let drawWidth = photoWidth;
+            let drawHeight = photoHeight;
+            let drawX = x;
+            let drawY = y;
+
+            if (aspectRatio > photoWidth / photoHeight) {
+              // Image is wider than container
+              drawHeight = photoWidth / aspectRatio;
+              drawY = y + (photoHeight - drawHeight) / 2;
+            } else {
+              // Image is taller than container
+              drawWidth = photoHeight * aspectRatio;
+              drawX = x + (photoWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
             ctx.restore();
 
             resolve();
@@ -170,6 +219,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       height = 900;
       canvas.width = width;
       canvas.height = height;
+      setOriginalSize({ width, height });
 
       // Draw background with rounded corners
       ctx.fillStyle = bgColor;
@@ -202,8 +252,24 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             roundedRect(ctx, x, y, photoWidth, photoHeight, 15);
             ctx.clip();
 
-            // Draw photo
-            ctx.drawImage(img, x, y, photoWidth, photoHeight);
+            // Draw photo while maintaining aspect ratio
+            const aspectRatio = img.width / img.height;
+            let drawWidth = photoWidth;
+            let drawHeight = photoHeight;
+            let drawX = x;
+            let drawY = y;
+
+            if (aspectRatio > photoWidth / photoHeight) {
+              // Image is wider than container
+              drawHeight = photoWidth / aspectRatio;
+              drawY = y + (photoHeight - drawHeight) / 2;
+            } else {
+              // Image is taller than container
+              drawWidth = photoHeight * aspectRatio;
+              drawX = x + (photoWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
             ctx.restore();
 
             resolve();
@@ -227,6 +293,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       height = 1600;
       canvas.width = width;
       canvas.height = height;
+      setOriginalSize({ width, height });
 
       // Draw background with rounded corners
       ctx.fillStyle = bgColor;
@@ -288,8 +355,24 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             roundedRect(ctx, x, y, photoWidth, photoHeight, 20);
             ctx.clip();
 
-            // Draw photo
-            ctx.drawImage(img, x, y, photoWidth, photoHeight);
+            // Draw photo while maintaining aspect ratio
+            const aspectRatio = img.width / img.height;
+            let drawWidth = photoWidth;
+            let drawHeight = photoHeight;
+            let drawX = x;
+            let drawY = y;
+
+            if (aspectRatio > photoWidth / photoHeight) {
+              // Image is wider than container
+              drawHeight = photoWidth / aspectRatio;
+              drawY = y + (photoHeight - drawHeight) / 2;
+            } else {
+              // Image is taller than container
+              drawWidth = photoHeight * aspectRatio;
+              drawX = x + (photoWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
             ctx.restore();
 
             resolve();
@@ -314,6 +397,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
       height = photos.length * 280 + 100;
       canvas.width = width;
       canvas.height = height;
+      setOriginalSize({ width, height });
 
       // Draw background with rounded corners
       ctx.fillStyle = bgColor;
@@ -344,8 +428,24 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             roundedRect(ctx, x, y, photoWidth, photoHeight, 10);
             ctx.clip();
 
-            // Draw photo with better quality
-            ctx.drawImage(img, x, y, photoWidth, photoHeight);
+            // Draw photo while maintaining aspect ratio
+            const aspectRatio = img.width / img.height;
+            let drawWidth = photoWidth;
+            let drawHeight = photoHeight;
+            let drawX = x;
+            let drawY = y;
+
+            if (aspectRatio > photoWidth / photoHeight) {
+              // Image is wider than container
+              drawHeight = photoWidth / aspectRatio;
+              drawY = y + (photoHeight - drawHeight) / 2;
+            } else {
+              // Image is taller than container
+              drawWidth = photoHeight * aspectRatio;
+              drawX = x + (photoWidth - drawWidth) / 2;
+            }
+
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
             ctx.restore();
 
             resolve();
@@ -389,7 +489,7 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center w-full px-4">
       {/* Add Google Font link for VT323 in the document */}
       <Head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -404,16 +504,16 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
         />
       </Head>
 
-      <div className="mb-4">
-        <div className="flex gap-4">
+      <div className="mb-4 w-full flex justify-center">
+        <div className="flex gap-2 sm:gap-4">
           <div
             className={`flex items-center p-2 cursor-pointer rounded-md ${
               backgroundColor === "white" ? "ring-2 ring-blue-500" : ""
             }`}
             onClick={() => setBackgroundColor("white")}
           >
-            <div className="w-5 h-5 border border-gray-300 bg-white mr-2 rounded-full"></div>
-            <span>White</span>
+            <div className="w-4 h-4 sm:w-5 sm:h-5 border border-gray-300 bg-white mr-1 sm:mr-2 rounded-full"></div>
+            <span className="text-sm sm:text-base">White</span>
           </div>
 
           <div
@@ -422,33 +522,65 @@ export default function PhotoStrip({ photos, layout }: PhotoStripProps) {
             }`}
             onClick={() => setBackgroundColor("black")}
           >
-            <div className="w-5 h-5 border border-gray-300 bg-black mr-2 rounded-full"></div>
-            <span>Black</span>
+            <div className="w-4 h-4 sm:w-5 sm:h-5 border border-gray-300 bg-black mr-1 sm:mr-2 rounded-full"></div>
+            <span className="text-sm sm:text-base">Black</span>
           </div>
         </div>
       </div>
 
-      <div className="border p-4 bg-gray-100 rounded-lg shadow-lg">
+      <div
+        ref={containerRef}
+        className="border p-2 sm:p-4 bg-gray-100 rounded-lg shadow-lg w-full sm:w-auto overflow-auto max-h-screen"
+      >
         <canvas
           ref={canvasRef}
-          className="max-w-full"
           style={{
-            maxHeight: "80vh",
-            width: "auto",
-            height: "auto",
+            width: canvasSize.width > 0 ? canvasSize.width : "auto",
+            height: canvasSize.height > 0 ? canvasSize.height : "auto",
+            display: "block",
+            margin: "0 auto",
           }}
         />
       </div>
 
-      <div className="mt-4 flex gap-4">
-        <Button onClick={generatePhotoStrip} variant="outline">
+      <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto justify-center">
+        <Button
+          onClick={generatePhotoStrip}
+          variant="outline"
+          className="w-full sm:w-auto"
+        >
           Preview
         </Button>
-        <Button onClick={downloadPhotoStrip} variant="default">
+        <Button
+          onClick={downloadPhotoStrip}
+          variant="default"
+          className="w-full sm:w-auto"
+        >
           <Download className="h-4 w-4 mr-2" />
-          Download Photo Strip
+          Download
         </Button>
       </div>
     </div>
   );
+}
+
+// Custom hook for media queries
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+
+    const listener = () => {
+      setMatches(media.matches);
+    };
+
+    media.addEventListener("change", listener);
+    return () => media.removeEventListener("change", listener);
+  }, [matches, query]);
+
+  return matches;
 }
